@@ -16,6 +16,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 
 import org.apache.poi.ss.usermodel.*;
@@ -35,9 +36,12 @@ public class ExtractData {
      * @param args the command line arguments
      */        
     
+    // Excel Extraction
+    private static boolean EXTRACTION = true;
+    
     // Folder path
-    //private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/All_06_01_19_to_08_28_19/";
-    private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/Test1/";
+    private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/Test/";
+    //private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/06_01_19_to_09_29_19/";
 
     //Time interval for incidents
     static final int TS_TO_S = 3037; //3037 equals 1 second in timestamp period
@@ -68,7 +72,7 @@ public class ExtractData {
         }
         System.out.println("Files readed. " + incidents.size() + " incidents found");
         
-        List<IncidentDetail> detailIncidents = new ArrayList<>();
+        ArrayList<List<List<IncidentDetail>>> detailIncidents = new ArrayList<>();
         
         // Get incidents (filename, type, timestamp)
         List<IncidentTimestamp> tempIncidents = new ArrayList<>();
@@ -84,20 +88,18 @@ public class ExtractData {
             }
         }
 
-        // Remove duplicates from tempIncidents
-        // List<String> incidentsFiles = new ArrayList<>(new HashSet<>(tempIncidents));
-        
         detailIncidents = readDetail(tempIncidents);
         
+        if (EXTRACTION)
+        {
+            System.out.println("Generating XLS Incidents file");
+            String xlsName = writeXLSIncidentsFile(folder, incidents);
+            System.out.println("XLS file generated. Name: " + xlsName);
         
-        System.out.println("Generating XLS Incidents file");
-        String xlsName = writeXLSIncidentsFile(folder, incidents);
-        System.out.println("XLS file generated. Name: " + xlsName);
-        
-        System.out.println("Generating XLS Detail file");
-        String xlsDetailName = writeXLSDetailFile(folder, detailIncidents);
-        System.out.println("XLS file generated. Name: " + xlsDetailName);
-        
+            System.out.println("Generating XLS Detail file");
+            String xlsDetailName = writeXLSDetailFile(folder, detailIncidents);
+            System.out.println("XLS file generated. Name: " + xlsDetailName);
+        }
     }
     
     private static List<String> getFileNames(String directory)
@@ -205,9 +207,17 @@ public class ExtractData {
         return incidents;
     }
    
-    private static List<IncidentDetail> readDetail(List<IncidentTimestamp> incidents) throws IOException
+    private static ArrayList<List<List<IncidentDetail>>> readDetail(List<IncidentTimestamp> incidents) throws IOException
     {
-        List<IncidentDetail> detailIncidents = new ArrayList<>();
+        ArrayList<List<List<IncidentDetail>>> detailIncidents = new ArrayList<>();
+        List<List<IncidentDetail>> d1 = new ArrayList<>();
+        List<List<IncidentDetail>> d2 = new ArrayList<>();
+        List<List<IncidentDetail>> d3 = new ArrayList<>();
+        List<List<IncidentDetail>> d4 = new ArrayList<>();
+        List<List<IncidentDetail>> d5 = new ArrayList<>();
+        List<List<IncidentDetail>> d6 = new ArrayList<>();
+        List<List<IncidentDetail>> d7 = new ArrayList<>();
+        List<List<IncidentDetail>> d8 = new ArrayList<>();
         float prevLatDetailIncident=0;
         float prevLonDetailIncident=0;
         float prevAcc_68DetailIncident=0;
@@ -219,6 +229,7 @@ public class ExtractData {
         for(IncidentTimestamp iT : incidents)
         {
             i++;
+            List<IncidentDetail> idet = new ArrayList<>();
             FileReader reader = new FileReader(folder + iT.getDs_name());
             BufferedReader br = new BufferedReader(reader);
 
@@ -311,7 +322,7 @@ public class ExtractData {
                     detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
                     prevGyr_cDetailIncident = detailIncident.getGyr_c();
                 }
-                detailIncidents.add(detailIncident);
+                idet.add(detailIncident);
                 
                 line = br.readLine();
                 if (line == null)
@@ -319,11 +330,65 @@ public class ExtractData {
                 
                 incidentFields = line.split(",",-1);    
             }
-            //System.out.println("Incident added:");
-            //System.out.println("detailIncidents size: " + detailIncidents.size());
+            
+            if (!idet.isEmpty())
+            {    
+                switch (iT.getIncident())
+                {
+                    case 1:
+                        d1.add(idet);
+                        break;
+                    case 2:
+                        d2.add(idet);
+                        break;
+                    case 3:
+                        d3.add(idet);
+                        break;
+                    case 4:
+                        d4.add(idet);
+                        break;
+                    case 5:
+                        d5.add(idet);
+                        break;
+                    case 6:
+                        d6.add(idet);
+                        break;
+                    case 7:
+                        d7.add(idet);
+                        break;
+                    case 8:
+                        d8.add(idet);
+                        break;
+                    default:
+                        break;
+                }
+            }
             
         }
-
+        detailIncidents.add(d1);
+        detailIncidents.add(d2);
+        detailIncidents.add(d3);
+        detailIncidents.add(d4);
+        detailIncidents.add(d5);
+        detailIncidents.add(d6);
+        detailIncidents.add(d7);
+        detailIncidents.add(d8);
+        
+        System.out.println("----------------------------------------");
+        System.out.println("Summary of incidents added:");
+        System.out.println(" - Type 1: " + d1.size() + " incidents");
+        System.out.println(" - Type 2: " + d2.size() + " incidents");
+        System.out.println(" - Type 3: " + d3.size() + " incidents");
+        System.out.println(" - Type 4: " + d4.size() + " incidents");
+        System.out.println(" - Type 5: " + d5.size() + " incidents");
+        System.out.println(" - Type 6: " + d6.size() + " incidents");
+        System.out.println(" - Type 7: " + d7.size() + " incidents");
+        System.out.println(" - Type 8: " + d8.size() + " incidents");
+        System.out.println();
+        int total = d1.size() + d2.size() + d3.size() + d4.size() + d5.size() + d6.size() + d7.size() + d8.size();
+        System.out.println("Total: " + total + " incidents");
+        System.out.println("----------------------------------------");
+        
         return detailIncidents;
     }
 
@@ -360,6 +425,10 @@ public class ExtractData {
         heading.createCell(19).setCellValue("Scary");
         heading.createCell(20).setCellValue("Description");
         
+        CellStyle styleTimestamp = wb.createCellStyle();
+        HSSFDataFormat tf = wb.createDataFormat();
+        styleTimestamp.setDataFormat(tf.getFormat("#####"));
+        
         // Adding Data
         int r = 1;
         for (Incident i : incidents) 
@@ -380,6 +449,7 @@ public class ExtractData {
             // Timestamp
             Cell cellTimestamp = row.createCell(4);
             cellTimestamp.setCellValue(i.getTimestamp());
+            cellTimestamp.setCellStyle(styleTimestamp); //Style
             // Bike
             Cell cellBike = row.createCell(5);
             cellBike.setCellValue(i.getBike());
@@ -431,6 +501,14 @@ public class ExtractData {
             r++;
         }
         
+        //Filter
+        s.setAutoFilter(new CellRangeAddress(0, 0, 0, 12));
+        s.createFreezePane(0, 1);
+
+        //Autofit
+        for(int k=0; k<=12; k++)
+            s.autoSizeColumn(k);
+        
         // Save file
         FileOutputStream out = new FileOutputStream(filename);
         wb.write(out);
@@ -441,16 +519,17 @@ public class ExtractData {
 
     }
     
-    private static String writeXLSDetailFile(String path, List<IncidentDetail> incidentsDetail) throws IOException
+    private static String writeXLSDetailFile(String path, ArrayList<List<List<IncidentDetail>>> incidentsDetail) throws IOException
     {
         Date date = new Date(System.currentTimeMillis());
         String filename = path + "Output/IncidentsDetail/" + String.valueOf(date.toInstant().toEpochMilli()) + ".xls";
-
+        
         HSSFWorkbook wb = new HSSFWorkbook();
         
-        for (int j=1; j<=8; j++)
+        int type=1;
+        for (List<List<IncidentDetail>> idtype : incidentsDetail)
         {
-            HSSFSheet s = wb.createSheet("Type " + String.valueOf(j));
+            HSSFSheet s = wb.createSheet("Type " + String.valueOf(type));
 
             // Create heading
             Row heading = s.createRow(0);
@@ -472,12 +551,11 @@ public class ExtractData {
             HSSFDataFormat tf = wb.createDataFormat();
             styleTimestamp.setDataFormat(tf.getFormat("#####"));
 
-            
             // Adding Data
-            int r = 1;
-            for (IncidentDetail i : incidentsDetail) 
+            int r = 1, id = 1;
+            for (List<IncidentDetail> lid : idtype) 
             {
-                if (i.getType()==j)
+                for (IncidentDetail i : lid)
                 {
                     Row row = s.createRow(r);
                     // Ds_Name
@@ -485,7 +563,7 @@ public class ExtractData {
                     cellDs_name.setCellValue(i.getDs_name());
                     // Key
                     Cell cellKey = row.createCell(1);
-                    cellKey.setCellValue(i.getKey());
+                    cellKey.setCellValue(id);
                     // Type
                     Cell cellType = row.createCell(2);
                     cellType.setCellValue(i.getType());
@@ -522,6 +600,7 @@ public class ExtractData {
                     cellgyr_C.setCellValue(i.getGyr_c());
                     r++;
                 }
+                id++;
             }
             
             //Filter
@@ -532,6 +611,7 @@ public class ExtractData {
             for(int k=0; k<=12; k++)
                 s.autoSizeColumn(k);
             
+            type++;
         }
         
         
