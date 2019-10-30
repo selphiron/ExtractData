@@ -15,8 +15,8 @@ public class Incident {
     
     private String ds_name;
     private int key;
-    private float latitude;
-    private float longitude;
+    private double latitude;
+    private double longitude;
     private long timestamp;
     private int bike;
     private boolean childCheckBox;
@@ -43,11 +43,11 @@ public class Incident {
         return key;
     }
 
-    public float getLatitude() {
+    public double getLatitude() {
         return latitude;
     }
 
-    public float getLongitude() {
+    public double getLongitude() {
         return longitude;
     }
 
@@ -127,11 +127,11 @@ public class Incident {
         this.key = key;
     }
 
-    public void setLatitude(float latitude) {
+    public void setLatitude(double latitude) {
         this.latitude = latitude;
     }
 
-    public void setLongitude(float longitude) {
+    public void setLongitude(double longitude) {
         this.longitude = longitude;
     }
 

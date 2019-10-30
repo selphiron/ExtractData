@@ -11,18 +11,23 @@ import java.util.Date;
  *
  * @author AlbertSanchez
  */
-public class IncidentTimestamp {
+public class IncidentCoordinates {
     
     private String ds_name;
-    private long timestamp;
+    private double latitude;
+    private double longitude;
     private int incident;
 
     public String getDs_name() {
         return ds_name;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public double getLatitude() {
+        return latitude;
+    }
+    
+    public double getLongitude() {
+        return longitude;
     }
 
     public int getIncident() {
@@ -33,10 +38,14 @@ public class IncidentTimestamp {
         this.ds_name = ds_name;
     }
 
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
     }
 
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
+    }
+    
     public void setIncident(int incident) {
         this.incident = incident;
     }    

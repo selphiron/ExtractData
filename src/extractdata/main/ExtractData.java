@@ -15,6 +15,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.LineNumberReader;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -40,12 +41,15 @@ public class ExtractData {
     private static boolean EXTRACTION = true;
     
     // Folder path
-    private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/Test/";
-    //private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/06_01_19_to_09_29_19/";
+    //private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/Test/";
+    private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/06_01_19_to_09_29_19/";
 
     //Time interval for incidents
     static final int TS_TO_S = 3037; //3037 equals 1 second in timestamp period
     private static int dt = 5*TS_TO_S; //In s.; The total time interval will be 10. (<--5-- center t --5-->)
+    
+    //Time interval in GPS Coordinates
+    //private static final int dCoord = 1;
     
     public static void main(String[] args) throws IOException 
     {   
@@ -75,15 +79,16 @@ public class ExtractData {
         ArrayList<List<List<IncidentDetail>>> detailIncidents = new ArrayList<>();
         
         // Get incidents (filename, type, timestamp)
-        List<IncidentTimestamp> tempIncidents = new ArrayList<>();
+        List<IncidentCoordinates> tempIncidents = new ArrayList<>();
         for (Incident i : incidents)
         {
             if (i.getIncident() != 0)
             {
-                IncidentTimestamp iT = new IncidentTimestamp();
+                IncidentCoordinates iT = new IncidentCoordinates();
                 iT.setDs_name(i.getDs_name());
                 iT.setIncident(i.getIncident());
-                iT.setTimestamp(i.getTimestamp());
+                iT.setLatitude(i.getLatitude());
+                iT.setLongitude(i.getLongitude());
                 tempIncidents.add(iT);
             }
         }
@@ -135,8 +140,8 @@ public class ExtractData {
             incident.setDs_name(fileName);
             String[] incidentFields = line.split(",",-1);
             incident.setKey(Integer.parseInt(incidentFields[0]));
-            incident.setLatitude(Float.parseFloat(incidentFields[1]));
-            incident.setLongitude(Float.parseFloat(incidentFields[2]));
+            incident.setLatitude(Double.parseDouble(incidentFields[1]));
+            incident.setLongitude(Double.parseDouble(incidentFields[2]));
             incident.setTimestamp(Long.parseLong(incidentFields[3]));
             incident.setBike(Integer.parseInt(incidentFields[4]));
             if(incidentFields[5].equals("1"))
@@ -207,7 +212,7 @@ public class ExtractData {
         return incidents;
     }
    
-    private static ArrayList<List<List<IncidentDetail>>> readDetail(List<IncidentTimestamp> incidents) throws IOException
+    private static ArrayList<List<List<IncidentDetail>>> readDetail(List<IncidentCoordinates> incidents) throws IOException
     {
         ArrayList<List<List<IncidentDetail>>> detailIncidents = new ArrayList<>();
         List<List<IncidentDetail>> d1 = new ArrayList<>();
@@ -218,57 +223,70 @@ public class ExtractData {
         List<List<IncidentDetail>> d6 = new ArrayList<>();
         List<List<IncidentDetail>> d7 = new ArrayList<>();
         List<List<IncidentDetail>> d8 = new ArrayList<>();
-        float prevLatDetailIncident=0;
-        float prevLonDetailIncident=0;
+        double prevLatDetailIncident=0;
+        double prevLonDetailIncident=0;
         float prevAcc_68DetailIncident=0;
         float prevGyr_aDetailIncident=0;
         float prevGyr_bDetailIncident=0;
         float prevGyr_cDetailIncident=0; 
         int i=-1;
 
-        for(IncidentTimestamp iT : incidents)
+        for(IncidentCoordinates iT : incidents)
         {
             i++;
             List<IncidentDetail> idet = new ArrayList<>();
-            FileReader reader = new FileReader(folder + iT.getDs_name());
-            BufferedReader br = new BufferedReader(reader);
+            IncidentDetail detailIncident = null;
+            FileReader r1 = new FileReader(folder + iT.getDs_name());
+            FileReader r2 = new FileReader(folder + iT.getDs_name());
+            LineNumberReader lnr = new LineNumberReader(r1);
+            BufferedReader br = new BufferedReader(r2);
 
+            int gpsLine = 1;
+            
             // Read until header of the ride data
-            String line = br.readLine();
+            String line = lnr.readLine();
             while(!line.equals("lat,lon,X,Y,Z,timeStamp,acc,a,b,c"))
-                line = br.readLine();
-            
-            line = br.readLine();
-            String[] incidentFields = line.split(",",-1); 
-
-            while(((Long.parseLong(incidentFields[5]) < iT.getTimestamp() - dt)))
             {
-                if (!incidentFields[0].equals(""))
-                    prevLatDetailIncident = Float.parseFloat(incidentFields[0]);
-
-                if (!incidentFields[1].equals(""))
-                    prevLonDetailIncident = Float.parseFloat(incidentFields[1]);
-                
-                if (!incidentFields[6].equals(""))
-                    prevAcc_68DetailIncident = Float.parseFloat(incidentFields[6]);
-                
-                if (!incidentFields[7].equals(""))
-                    prevGyr_aDetailIncident = Float.parseFloat(incidentFields[7]);
-                
-                if (!incidentFields[8].equals(""))
-                    prevGyr_bDetailIncident = Float.parseFloat(incidentFields[8]);
-            
-                if (!incidentFields[9].equals(""))
-                    prevGyr_cDetailIncident = Float.parseFloat(incidentFields[9]);
-                    
-                line = br.readLine();
-                incidentFields = line.split(",",-1); 
+                line = lnr.readLine();
+                gpsLine++;
             }
             
-            while(((Long.parseLong(incidentFields[5]) >= iT.getTimestamp() - dt))
-               && ((Long.parseLong(incidentFields[5]) <= iT.getTimestamp() + dt)))
+            line = lnr.readLine();
+            String[] incidentFields = line.split(",",-1); 
+            
+            prevLatDetailIncident = Double.parseDouble(incidentFields[0]);
+            prevLonDetailIncident = Double.parseDouble(incidentFields[1]);
+
+            //Searching previous GPS Coordinates of the Incident
+            while((iT.getLatitude() != prevLatDetailIncident) ||
+                    (iT.getLongitude() != prevLonDetailIncident))
             {
-                IncidentDetail detailIncident = new IncidentDetail();
+                //GPS Coordinates found
+                if (!incidentFields[0].equals(""))
+                    gpsLine = lnr.getLineNumber() - 1; 
+
+                line = lnr.readLine();
+                incidentFields = line.split(",",-1); 
+                if (!incidentFields[0].equals("") && !incidentFields[1].equals(""))
+                {
+                    prevLatDetailIncident = Double.parseDouble(incidentFields[0]);
+                    prevLonDetailIncident = Double.parseDouble(incidentFields[1]);
+                }
+            }
+                        
+            //Going to the previous GPS Coordinates
+            for(int z=0; z < gpsLine; z++)
+                br.readLine();
+            
+            line = br.readLine();
+            incidentFields = line.split(",",-1); 
+            
+            //Read values before the central incident point
+            while((iT.getLatitude() != Double.parseDouble(incidentFields[0])) ||
+                 (iT.getLongitude() != Double.parseDouble(incidentFields[1])))
+            {
+             
+                detailIncident = new IncidentDetail();
 
                 detailIncident.setDs_name(iT.getDs_name());
                 detailIncident.setKey(i);
@@ -278,7 +296,7 @@ public class ExtractData {
                     detailIncident.setLatitude(prevLatDetailIncident);
                 else
                 {
-                    detailIncident.setLatitude(Float.parseFloat(incidentFields[0]));
+                    detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
                     prevLatDetailIncident = detailIncident.getLatitude();
                 }
 
@@ -286,7 +304,7 @@ public class ExtractData {
                     detailIncident.setLongitude(prevLonDetailIncident);
                 else
                 {
-                    detailIncident.setLongitude(Float.parseFloat(incidentFields[1]));
+                    detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
                     prevLonDetailIncident = detailIncident.getLongitude();
                 }
 
@@ -328,8 +346,204 @@ public class ExtractData {
                 if (line == null)
                     break;
                 
-                incidentFields = line.split(",",-1);    
+                incidentFields = line.split(",",-1);   
+                
+                if (incidentFields[0].equals(""))
+                    incidentFields[0] = String.valueOf(prevLatDetailIncident);
+                if (incidentFields[1].equals(""))
+                    incidentFields[1] = String.valueOf(prevLonDetailIncident);
             }
+            
+            //Read values of the central incident point
+            detailIncident = new IncidentDetail();
+
+            detailIncident.setDs_name(iT.getDs_name());
+            detailIncident.setKey(i);
+            detailIncident.setType(iT.getIncident());
+
+            if (incidentFields[0].equals(""))
+                detailIncident.setLatitude(prevLatDetailIncident);
+            else
+            {
+                detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
+                prevLatDetailIncident = detailIncident.getLatitude();
+            }
+
+            if (incidentFields[1].equals(""))
+                detailIncident.setLongitude(prevLonDetailIncident);
+            else
+            {
+                detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
+                prevLonDetailIncident = detailIncident.getLongitude();
+            }
+
+            detailIncident.setAcc_x(Float.parseFloat(incidentFields[2]));
+            detailIncident.setAcc_y(Float.parseFloat(incidentFields[3]));
+            detailIncident.setAcc_z(Float.parseFloat(incidentFields[4]));
+            detailIncident.setTimestamp(Long.parseLong(incidentFields[5]));
+            if (incidentFields[6].equals(""))
+                detailIncident.setAcc_68(prevAcc_68DetailIncident);
+            else
+            {
+                detailIncident.setAcc_68(Float.parseFloat(incidentFields[6]));
+                prevAcc_68DetailIncident = detailIncident.getAcc_68();
+            }
+            if (incidentFields[7].equals(""))
+                detailIncident.setGyr_a(prevGyr_aDetailIncident);
+            else
+            {
+                detailIncident.setGyr_a(Float.parseFloat(incidentFields[7]));
+                prevGyr_aDetailIncident = detailIncident.getGyr_a();
+            }
+            if (incidentFields[8].equals(""))
+                detailIncident.setGyr_b(prevGyr_bDetailIncident);
+            else
+            {
+                detailIncident.setGyr_b(Float.parseFloat(incidentFields[8]));
+                prevGyr_bDetailIncident = detailIncident.getGyr_b();
+            }
+            if (incidentFields[9].equals(""))
+                detailIncident.setGyr_c(prevGyr_cDetailIncident);
+            else
+            {
+                detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
+                prevGyr_cDetailIncident = detailIncident.getGyr_c();
+            }
+            idet.add(detailIncident);
+
+            line = br.readLine();
+            if (line == null)
+                break;
+
+            incidentFields = line.split(",",-1); 
+            
+            detailIncident = null;
+            
+            //Read values after the central incident point
+            while(incidentFields[0].equals("") && incidentFields[1].equals(""))
+            {
+                detailIncident = new IncidentDetail();
+
+                detailIncident.setDs_name(iT.getDs_name());
+                detailIncident.setKey(i);
+                detailIncident.setType(iT.getIncident());
+
+                if (incidentFields[0].equals(""))
+                    detailIncident.setLatitude(prevLatDetailIncident);
+                else
+                {
+                    detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
+                    prevLatDetailIncident = detailIncident.getLatitude();
+                }
+
+                if (incidentFields[1].equals(""))
+                    detailIncident.setLongitude(prevLonDetailIncident);
+                else
+                {
+                    detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
+                    prevLonDetailIncident = detailIncident.getLongitude();
+                }
+
+                detailIncident.setAcc_x(Float.parseFloat(incidentFields[2]));
+                detailIncident.setAcc_y(Float.parseFloat(incidentFields[3]));
+                detailIncident.setAcc_z(Float.parseFloat(incidentFields[4]));
+                detailIncident.setTimestamp(Long.parseLong(incidentFields[5]));
+                if (incidentFields[6].equals(""))
+                    detailIncident.setAcc_68(prevAcc_68DetailIncident);
+                else
+                {
+                    detailIncident.setAcc_68(Float.parseFloat(incidentFields[6]));
+                    prevAcc_68DetailIncident = detailIncident.getAcc_68();
+                }
+                if (incidentFields[7].equals(""))
+                    detailIncident.setGyr_a(prevGyr_aDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_a(Float.parseFloat(incidentFields[7]));
+                    prevGyr_aDetailIncident = detailIncident.getGyr_a();
+                }
+                if (incidentFields[8].equals(""))
+                    detailIncident.setGyr_b(prevGyr_bDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_b(Float.parseFloat(incidentFields[8]));
+                    prevGyr_bDetailIncident = detailIncident.getGyr_b();
+                }
+                if (incidentFields[9].equals(""))
+                    detailIncident.setGyr_c(prevGyr_cDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
+                    prevGyr_cDetailIncident = detailIncident.getGyr_c();
+                }
+                idet.add(detailIncident);
+                
+                line = br.readLine();
+                if (line == null)
+                    break;
+                
+                incidentFields = line.split(",",-1); 
+            }
+            
+            detailIncident = null;
+            
+            //Read last GPS coordinates data
+            detailIncident = new IncidentDetail();
+
+            detailIncident.setDs_name(iT.getDs_name());
+            detailIncident.setKey(i);
+            detailIncident.setType(iT.getIncident());
+
+            if (incidentFields[0].equals(""))
+                detailIncident.setLatitude(prevLatDetailIncident);
+            else
+            {
+                detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
+                prevLatDetailIncident = detailIncident.getLatitude();
+            }
+
+            if (incidentFields[1].equals(""))
+                detailIncident.setLongitude(prevLonDetailIncident);
+            else
+            {
+                detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
+                prevLonDetailIncident = detailIncident.getLongitude();
+            }
+
+            detailIncident.setAcc_x(Float.parseFloat(incidentFields[2]));
+            detailIncident.setAcc_y(Float.parseFloat(incidentFields[3]));
+            detailIncident.setAcc_z(Float.parseFloat(incidentFields[4]));
+            detailIncident.setTimestamp(Long.parseLong(incidentFields[5]));
+            if (incidentFields[6].equals(""))
+                detailIncident.setAcc_68(prevAcc_68DetailIncident);
+            else
+            {
+                detailIncident.setAcc_68(Float.parseFloat(incidentFields[6]));
+                prevAcc_68DetailIncident = detailIncident.getAcc_68();
+            }
+            if (incidentFields[7].equals(""))
+                detailIncident.setGyr_a(prevGyr_aDetailIncident);
+            else
+            {
+                detailIncident.setGyr_a(Float.parseFloat(incidentFields[7]));
+                prevGyr_aDetailIncident = detailIncident.getGyr_a();
+            }
+            if (incidentFields[8].equals(""))
+                detailIncident.setGyr_b(prevGyr_bDetailIncident);
+            else
+            {
+                detailIncident.setGyr_b(Float.parseFloat(incidentFields[8]));
+                prevGyr_bDetailIncident = detailIncident.getGyr_b();
+            }
+            if (incidentFields[9].equals(""))
+                detailIncident.setGyr_c(prevGyr_cDetailIncident);
+            else
+            {
+                detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
+                prevGyr_cDetailIncident = detailIncident.getGyr_c();
+            }
+            idet.add(detailIncident);
+
             
             if (!idet.isEmpty())
             {    
@@ -362,6 +576,7 @@ public class ExtractData {
                     default:
                         break;
                 }
+                System.out.println("Added incident " + i);
             }
             
         }
