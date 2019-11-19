@@ -41,8 +41,8 @@ public class ExtractData {
     private static boolean EXTRACTION = true;
     
     // Folder path
-    //private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/Test/";
-    private static String folder = "/Users/AlbertSanchez/Desktop/TFM/GitHub/dataset/Berlin/Rides/06_01_19_to_09_29_19/";
+    private static String folder = "/Users/AlbertSanchez/Dropbox/TFM/GitHub/dataset/Berlin/Rides/10_14_19_to_10_21_19/";
+    //private static String folder = "/Users/AlbertSanchez/Dropbox/TFM/GitHub/dataset/Berlin/Rides/06_01_19_to_09_29_19/";
 
     //Time interval for incidents
     static final int TS_TO_S = 3037; //3037 equals 1 second in timestamp period
