@@ -6,7 +6,6 @@
 package extractdata.main;
 
 import extractdata.entities.*;
-import extractdata.dao.*;
 import java.util.*;
 
 import java.io.BufferedReader;
@@ -38,15 +37,18 @@ public class ExtractData {
      */        
     
     // Excel Extraction
-    private static boolean EXTRACTION = true;
+    private static final boolean EXTRACTION = false;
+    
+    // Include Incidents with user TAG
+    private static final boolean userTAG = true;
     
     // Folder path
-    private static String folder = "/Users/AlbertSanchez/Dropbox/TFM/GitHub/dataset/Berlin/Rides/10_14_19_to_10_21_19/";
-    //private static String folder = "/Users/AlbertSanchez/Dropbox/TFM/GitHub/dataset/Berlin/Rides/06_01_19_to_09_29_19/";
+    //private static final String folder = "/Users/AlbertSanchez/Dropbox/TFM/GitHub/dataset/Berlin/Rides/10_14_19_to_10_21_19/";
+    private static String folder = "/Users/AlbertSanchez/Dropbox/TFM/GitHub/dataset/Berlin/Rides/06_01_19_to_09_29_19/";
 
     //Time interval for incidents
-    static final int TS_TO_S = 3037; //3037 equals 1 second in timestamp period
-    private static int dt = 5*TS_TO_S; //In s.; The total time interval will be 10. (<--5-- center t --5-->)
+    private static final int TS_TO_S = 3037; //3037 equals 1 second in timestamp period
+    private static final int dt = 5*TS_TO_S; //In s.; The total time interval will be 10. (<--5-- center t --5-->)
     
     //Time interval in GPS Coordinates
     //private static final int dCoord = 1;
@@ -78,7 +80,7 @@ public class ExtractData {
         
         ArrayList<List<List<IncidentDetail>>> detailIncidents = new ArrayList<>();
         
-        // Get incidents (filename, type, timestamp)
+        // Get incidents (filename, type, Latitude and Longitude)
         List<IncidentCoordinates> tempIncidents = new ArrayList<>();
         for (Incident i : incidents)
         {
@@ -205,8 +207,19 @@ public class ExtractData {
             
             incident.setDesc(description);
 
-            if (incident.getIncident() != 0)
-                incidents.add(incident);
+            
+            // Include userTAG incidents
+            if(userTAG)
+            {
+                if (incident.getIncident() != 0)
+                    incidents.add(incident);
+            }    
+            else
+            {
+                if (incident.getIncident() != 0 && incident.getTimestamp() != 1337)
+                    incidents.add(incident);
+            }
+            
             line = br.readLine();
         }    
         return incidents;
