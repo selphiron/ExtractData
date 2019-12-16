@@ -37,10 +37,10 @@ public class ExtractData {
      */        
     
     // Excel Extraction
-    private static final boolean EXTRACTION = false;
+    private static final boolean EXTRACTION = true;
     
     // Include Incidents with user TAG
-    private static final boolean userTAG = true;
+    private static final boolean userTAG = false;
     
     // Folder path
     //private static final String folder = "/Users/AlbertSanchez/Dropbox/TFM/GitHub/dataset/Berlin/Rides/10_14_19_to_10_21_19/";
@@ -79,33 +79,44 @@ public class ExtractData {
         System.out.println("Files readed. " + incidents.size() + " incidents found");
         
         ArrayList<List<List<IncidentDetail>>> detailIncidents = new ArrayList<>();
+        ArrayList<List<List<IncidentDetailPhoneLoc_BikeType>>> detailIncidentsWithMetadata = new ArrayList<>();
         
-        // Get incidents (filename, type, Latitude and Longitude)
-        List<IncidentCoordinates> tempIncidents = new ArrayList<>();
+        // Get incidents (filename, type, Latitude, Longitude, phoneLocation and bikeType)
+        List<IncidentCoordinatesAndMeta> tempIncidents = new ArrayList<>();
         for (Incident i : incidents)
         {
             if (i.getIncident() != 0)
             {
-                IncidentCoordinates iT = new IncidentCoordinates();
+                IncidentCoordinatesAndMeta iT = new IncidentCoordinatesAndMeta();
                 iT.setDs_name(i.getDs_name());
                 iT.setIncident(i.getIncident());
                 iT.setLatitude(i.getLatitude());
                 iT.setLongitude(i.getLongitude());
+                iT.setpLoc(i.getpLoc());
+                iT.setBikeType(i.getBike());
                 tempIncidents.add(iT);
             }
         }
-
-        detailIncidents = readDetail(tempIncidents);
+        // Commented because the detail is needed with metadata
+        //detailIncidents = readDetail(tempIncidents);
+        detailIncidentsWithMetadata = readDetailwithMetadata(tempIncidents);
+        
         
         if (EXTRACTION)
         {
             System.out.println("Generating XLS Incidents file");
             String xlsName = writeXLSIncidentsFile(folder, incidents);
             System.out.println("XLS file generated. Name: " + xlsName);
-        
+            
+            // Commented because the detail is needed with metadata
+            //System.out.println("Generating XLS Detail file");
+            //String xlsDetailName = writeXLSDetailFile(folder, detailIncidents);
+            //System.out.println("XLS file generated. Name: " + xlsDetailName);
+            
             System.out.println("Generating XLS Detail file");
-            String xlsDetailName = writeXLSDetailFile(folder, detailIncidents);
-            System.out.println("XLS file generated. Name: " + xlsDetailName);
+            String xlsDetailNameMetadata = writeXLSDetailFileWithMetadata(folder, detailIncidentsWithMetadata);
+            System.out.println("XLS file generated. Name: " + xlsDetailNameMetadata);
+            
         }
     }
     
@@ -225,7 +236,7 @@ public class ExtractData {
         return incidents;
     }
    
-    private static ArrayList<List<List<IncidentDetail>>> readDetail(List<IncidentCoordinates> incidents) throws IOException
+    private static ArrayList<List<List<IncidentDetail>>> readDetail(List<IncidentCoordinatesAndMeta> incidents) throws IOException
     {
         ArrayList<List<List<IncidentDetail>>> detailIncidents = new ArrayList<>();
         List<List<IncidentDetail>> d1 = new ArrayList<>();
@@ -243,8 +254,9 @@ public class ExtractData {
         float prevGyr_bDetailIncident=0;
         float prevGyr_cDetailIncident=0; 
         int i=-1;
+        boolean gpsLost = false;
 
-        for(IncidentCoordinates iT : incidents)
+        for(IncidentCoordinatesAndMeta iT : incidents)
         {
             i++;
             List<IncidentDetail> idet = new ArrayList<>();
@@ -557,8 +569,10 @@ public class ExtractData {
             }
             idet.add(detailIncident);
 
+            if (idet.size() > 100)
+                gpsLost = true;
             
-            if (!idet.isEmpty())
+            if (!idet.isEmpty() && !gpsLost)
             {    
                 switch (iT.getIncident())
                 {
@@ -591,7 +605,7 @@ public class ExtractData {
                 }
                 System.out.println("Added incident " + i);
             }
-            
+            gpsLost = false;
         }
         detailIncidents.add(d1);
         detailIncidents.add(d2);
@@ -602,16 +616,450 @@ public class ExtractData {
         detailIncidents.add(d7);
         detailIncidents.add(d8);
         
+        System.out.println(" - Type 1: " + d1.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d1.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d1.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 2: " + d2.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d2.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d2.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 3: " + d3.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d3.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d3.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 4: " + d4.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d4.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d4.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 5: " + d5.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d5.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d5.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 6: " + d6.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d6.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d6.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 7: " + d7.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d7.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d7.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 8: " + d8.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d8.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d8.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println();
+        int total = d1.size() + d2.size() + d3.size() + d4.size() + d5.size() + d6.size() + d7.size() + d8.size();
+        System.out.println("Total: " + total + " incidents");
         System.out.println("----------------------------------------");
-        System.out.println("Summary of incidents added:");
-        System.out.println(" - Type 1: " + d1.size() + " incidents");
-        System.out.println(" - Type 2: " + d2.size() + " incidents");
-        System.out.println(" - Type 3: " + d3.size() + " incidents");
-        System.out.println(" - Type 4: " + d4.size() + " incidents");
-        System.out.println(" - Type 5: " + d5.size() + " incidents");
-        System.out.println(" - Type 6: " + d6.size() + " incidents");
-        System.out.println(" - Type 7: " + d7.size() + " incidents");
-        System.out.println(" - Type 8: " + d8.size() + " incidents");
+        
+        return detailIncidents;
+    }
+    
+    private static ArrayList<List<List<IncidentDetailPhoneLoc_BikeType>>> readDetailwithMetadata(List<IncidentCoordinatesAndMeta> incidents) throws IOException
+    {
+        ArrayList<List<List<IncidentDetailPhoneLoc_BikeType>>> detailIncidents = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d1 = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d2 = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d3 = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d4 = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d5 = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d6 = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d7 = new ArrayList<>();
+        List<List<IncidentDetailPhoneLoc_BikeType>> d8 = new ArrayList<>();
+        double prevLatDetailIncident=0;
+        double prevLonDetailIncident=0;
+        float prevAcc_68DetailIncident=0;
+        float prevGyr_aDetailIncident=0;
+        float prevGyr_bDetailIncident=0;
+        float prevGyr_cDetailIncident=0; 
+        int i=-1;
+        boolean gpsLost = false;
+
+        for(IncidentCoordinatesAndMeta iT : incidents)
+        {
+            i++;
+            List<IncidentDetailPhoneLoc_BikeType> idet = new ArrayList<>();
+            IncidentDetailPhoneLoc_BikeType detailIncident = null;
+            FileReader r1 = new FileReader(folder + iT.getDs_name());
+            FileReader r2 = new FileReader(folder + iT.getDs_name());
+            LineNumberReader lnr = new LineNumberReader(r1);
+            BufferedReader br = new BufferedReader(r2);
+
+            int gpsLine = 1;
+            
+            // Read until header of the ride data
+            String line = lnr.readLine();
+            while(!line.equals("lat,lon,X,Y,Z,timeStamp,acc,a,b,c"))
+            {
+                line = lnr.readLine();
+                gpsLine++;
+            }
+            
+            line = lnr.readLine();
+            String[] incidentFields = line.split(",",-1); 
+            
+            prevLatDetailIncident = Double.parseDouble(incidentFields[0]);
+            prevLonDetailIncident = Double.parseDouble(incidentFields[1]);
+
+            //Searching previous GPS Coordinates of the Incident
+            while((iT.getLatitude() != prevLatDetailIncident) ||
+                    (iT.getLongitude() != prevLonDetailIncident))
+            {
+                //GPS Coordinates found
+                if (!incidentFields[0].equals(""))
+                    gpsLine = lnr.getLineNumber() - 1; 
+
+                line = lnr.readLine();
+                incidentFields = line.split(",",-1); 
+                if (!incidentFields[0].equals("") && !incidentFields[1].equals(""))
+                {
+                    prevLatDetailIncident = Double.parseDouble(incidentFields[0]);
+                    prevLonDetailIncident = Double.parseDouble(incidentFields[1]);
+                }
+            }
+                        
+            //Going to the previous GPS Coordinates
+            for(int z=0; z < gpsLine; z++)
+                br.readLine();
+            
+            line = br.readLine();
+            incidentFields = line.split(",",-1); 
+            
+            //Read values before the central incident point
+            while((iT.getLatitude() != Double.parseDouble(incidentFields[0])) ||
+                 (iT.getLongitude() != Double.parseDouble(incidentFields[1])))
+            {
+             
+                detailIncident = new IncidentDetailPhoneLoc_BikeType();
+
+                detailIncident.setDs_name(iT.getDs_name());
+                detailIncident.setKey(i);
+                detailIncident.setType(iT.getIncident());
+                detailIncident.setpLoc(iT.getpLoc());
+                detailIncident.setBikeType(iT.getBikeType());
+
+                if (incidentFields[0].equals(""))
+                    detailIncident.setLatitude(prevLatDetailIncident);
+                else
+                {
+                    detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
+                    prevLatDetailIncident = detailIncident.getLatitude();
+                }
+
+                if (incidentFields[1].equals(""))
+                    detailIncident.setLongitude(prevLonDetailIncident);
+                else
+                {
+                    detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
+                    prevLonDetailIncident = detailIncident.getLongitude();
+                }
+
+                detailIncident.setAcc_x(Float.parseFloat(incidentFields[2]));
+                detailIncident.setAcc_y(Float.parseFloat(incidentFields[3]));
+                detailIncident.setAcc_z(Float.parseFloat(incidentFields[4]));
+                detailIncident.setTimestamp(Long.parseLong(incidentFields[5]));
+                if (incidentFields[6].equals(""))
+                    detailIncident.setAcc_68(prevAcc_68DetailIncident);
+                else
+                {
+                    detailIncident.setAcc_68(Float.parseFloat(incidentFields[6]));
+                    prevAcc_68DetailIncident = detailIncident.getAcc_68();
+                }
+                if (incidentFields[7].equals(""))
+                    detailIncident.setGyr_a(prevGyr_aDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_a(Float.parseFloat(incidentFields[7]));
+                    prevGyr_aDetailIncident = detailIncident.getGyr_a();
+                }
+                if (incidentFields[8].equals(""))
+                    detailIncident.setGyr_b(prevGyr_bDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_b(Float.parseFloat(incidentFields[8]));
+                    prevGyr_bDetailIncident = detailIncident.getGyr_b();
+                }
+                if (incidentFields[9].equals(""))
+                    detailIncident.setGyr_c(prevGyr_cDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
+                    prevGyr_cDetailIncident = detailIncident.getGyr_c();
+                }
+                idet.add(detailIncident);
+                
+                line = br.readLine();
+                if (line == null)
+                    break;
+                
+                incidentFields = line.split(",",-1);   
+                
+                if (incidentFields[0].equals(""))
+                    incidentFields[0] = String.valueOf(prevLatDetailIncident);
+                if (incidentFields[1].equals(""))
+                    incidentFields[1] = String.valueOf(prevLonDetailIncident);
+            }
+            
+            //Read values of the central incident point
+            detailIncident = new IncidentDetailPhoneLoc_BikeType();
+
+            detailIncident.setDs_name(iT.getDs_name());
+            detailIncident.setKey(i);
+            detailIncident.setType(iT.getIncident());
+            detailIncident.setpLoc(iT.getpLoc());
+            detailIncident.setBikeType(iT.getBikeType());
+
+            if (incidentFields[0].equals(""))
+                detailIncident.setLatitude(prevLatDetailIncident);
+            else
+            {
+                detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
+                prevLatDetailIncident = detailIncident.getLatitude();
+            }
+
+            if (incidentFields[1].equals(""))
+                detailIncident.setLongitude(prevLonDetailIncident);
+            else
+            {
+                detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
+                prevLonDetailIncident = detailIncident.getLongitude();
+            }
+
+            detailIncident.setAcc_x(Float.parseFloat(incidentFields[2]));
+            detailIncident.setAcc_y(Float.parseFloat(incidentFields[3]));
+            detailIncident.setAcc_z(Float.parseFloat(incidentFields[4]));
+            detailIncident.setTimestamp(Long.parseLong(incidentFields[5]));
+            if (incidentFields[6].equals(""))
+                detailIncident.setAcc_68(prevAcc_68DetailIncident);
+            else
+            {
+                detailIncident.setAcc_68(Float.parseFloat(incidentFields[6]));
+                prevAcc_68DetailIncident = detailIncident.getAcc_68();
+            }
+            if (incidentFields[7].equals(""))
+                detailIncident.setGyr_a(prevGyr_aDetailIncident);
+            else
+            {
+                detailIncident.setGyr_a(Float.parseFloat(incidentFields[7]));
+                prevGyr_aDetailIncident = detailIncident.getGyr_a();
+            }
+            if (incidentFields[8].equals(""))
+                detailIncident.setGyr_b(prevGyr_bDetailIncident);
+            else
+            {
+                detailIncident.setGyr_b(Float.parseFloat(incidentFields[8]));
+                prevGyr_bDetailIncident = detailIncident.getGyr_b();
+            }
+            if (incidentFields[9].equals(""))
+                detailIncident.setGyr_c(prevGyr_cDetailIncident);
+            else
+            {
+                detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
+                prevGyr_cDetailIncident = detailIncident.getGyr_c();
+            }
+            idet.add(detailIncident);
+
+            line = br.readLine();
+            if (line == null)
+                break;
+
+            incidentFields = line.split(",",-1); 
+            
+            detailIncident = null;
+            
+            //Read values after the central incident point
+            while(incidentFields[0].equals("") && incidentFields[1].equals(""))
+            {
+                detailIncident = new IncidentDetailPhoneLoc_BikeType();
+
+                detailIncident.setDs_name(iT.getDs_name());
+                detailIncident.setKey(i);
+                detailIncident.setType(iT.getIncident());
+                detailIncident.setpLoc(iT.getpLoc());
+                detailIncident.setBikeType(iT.getBikeType());
+
+                if (incidentFields[0].equals(""))
+                    detailIncident.setLatitude(prevLatDetailIncident);
+                else
+                {
+                    detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
+                    prevLatDetailIncident = detailIncident.getLatitude();
+                }
+
+                if (incidentFields[1].equals(""))
+                    detailIncident.setLongitude(prevLonDetailIncident);
+                else
+                {
+                    detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
+                    prevLonDetailIncident = detailIncident.getLongitude();
+                }
+
+                detailIncident.setAcc_x(Float.parseFloat(incidentFields[2]));
+                detailIncident.setAcc_y(Float.parseFloat(incidentFields[3]));
+                detailIncident.setAcc_z(Float.parseFloat(incidentFields[4]));
+                detailIncident.setTimestamp(Long.parseLong(incidentFields[5]));
+                if (incidentFields[6].equals(""))
+                    detailIncident.setAcc_68(prevAcc_68DetailIncident);
+                else
+                {
+                    detailIncident.setAcc_68(Float.parseFloat(incidentFields[6]));
+                    prevAcc_68DetailIncident = detailIncident.getAcc_68();
+                }
+                if (incidentFields[7].equals(""))
+                    detailIncident.setGyr_a(prevGyr_aDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_a(Float.parseFloat(incidentFields[7]));
+                    prevGyr_aDetailIncident = detailIncident.getGyr_a();
+                }
+                if (incidentFields[8].equals(""))
+                    detailIncident.setGyr_b(prevGyr_bDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_b(Float.parseFloat(incidentFields[8]));
+                    prevGyr_bDetailIncident = detailIncident.getGyr_b();
+                }
+                if (incidentFields[9].equals(""))
+                    detailIncident.setGyr_c(prevGyr_cDetailIncident);
+                else
+                {
+                    detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
+                    prevGyr_cDetailIncident = detailIncident.getGyr_c();
+                }
+                idet.add(detailIncident);
+                
+                line = br.readLine();
+                if (line == null)
+                    break;
+                
+                incidentFields = line.split(",",-1); 
+            }
+            
+            detailIncident = null;
+            
+            //Read last GPS coordinates data
+            detailIncident = new IncidentDetailPhoneLoc_BikeType();
+
+            detailIncident.setDs_name(iT.getDs_name());
+            detailIncident.setKey(i);
+            detailIncident.setType(iT.getIncident());
+            detailIncident.setpLoc(iT.getpLoc());
+            detailIncident.setBikeType(iT.getBikeType());
+
+            if (incidentFields[0].equals(""))
+                detailIncident.setLatitude(prevLatDetailIncident);
+            else
+            {
+                detailIncident.setLatitude(Double.parseDouble(incidentFields[0]));
+                prevLatDetailIncident = detailIncident.getLatitude();
+            }
+
+            if (incidentFields[1].equals(""))
+                detailIncident.setLongitude(prevLonDetailIncident);
+            else
+            {
+                detailIncident.setLongitude(Double.parseDouble(incidentFields[1]));
+                prevLonDetailIncident = detailIncident.getLongitude();
+            }
+
+            detailIncident.setAcc_x(Float.parseFloat(incidentFields[2]));
+            detailIncident.setAcc_y(Float.parseFloat(incidentFields[3]));
+            detailIncident.setAcc_z(Float.parseFloat(incidentFields[4]));
+            detailIncident.setTimestamp(Long.parseLong(incidentFields[5]));
+            if (incidentFields[6].equals(""))
+                detailIncident.setAcc_68(prevAcc_68DetailIncident);
+            else
+            {
+                detailIncident.setAcc_68(Float.parseFloat(incidentFields[6]));
+                prevAcc_68DetailIncident = detailIncident.getAcc_68();
+            }
+            if (incidentFields[7].equals(""))
+                detailIncident.setGyr_a(prevGyr_aDetailIncident);
+            else
+            {
+                detailIncident.setGyr_a(Float.parseFloat(incidentFields[7]));
+                prevGyr_aDetailIncident = detailIncident.getGyr_a();
+            }
+            if (incidentFields[8].equals(""))
+                detailIncident.setGyr_b(prevGyr_bDetailIncident);
+            else
+            {
+                detailIncident.setGyr_b(Float.parseFloat(incidentFields[8]));
+                prevGyr_bDetailIncident = detailIncident.getGyr_b();
+            }
+            if (incidentFields[9].equals(""))
+                detailIncident.setGyr_c(prevGyr_cDetailIncident);
+            else
+            {
+                detailIncident.setGyr_c(Float.parseFloat(incidentFields[9]));
+                prevGyr_cDetailIncident = detailIncident.getGyr_c();
+            }
+            idet.add(detailIncident);
+
+            if (idet.size() > 100)
+                gpsLost = true;
+            
+            if (!idet.isEmpty() && !gpsLost)
+            {    
+                switch (iT.getIncident())
+                {
+                    case 1:
+                        d1.add(idet);
+                        break;
+                    case 2:
+                        d2.add(idet);
+                        break;
+                    case 3:
+                        d3.add(idet);
+                        break;
+                    case 4:
+                        d4.add(idet);
+                        break;
+                    case 5:
+                        d5.add(idet);
+                        break;
+                    case 6:
+                        d6.add(idet);
+                        break;
+                    case 7:
+                        d7.add(idet);
+                        break;
+                    case 8:
+                        d8.add(idet);
+                        break;
+                    default:
+                        break;
+                }
+                System.out.println("Added incident " + i);
+            }
+            gpsLost = false;
+        }
+        detailIncidents.add(d1);
+        detailIncidents.add(d2);
+        detailIncidents.add(d3);
+        detailIncidents.add(d4);
+        detailIncidents.add(d5);
+        detailIncidents.add(d6);
+        detailIncidents.add(d7);
+        detailIncidents.add(d8);
+        
+        System.out.println(" - Type 1: " + d1.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d1.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d1.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 2: " + d2.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d2.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d2.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 3: " + d3.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d3.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d3.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 4: " + d4.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d4.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d4.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 5: " + d5.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d5.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d5.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 6: " + d6.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d6.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d6.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 7: " + d7.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d7.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d7.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
+        System.out.println(" - Type 8: " + d8.size() + " incidents.");
+        System.out.println("    · Biggest item size: " + d8.stream().mapToInt(List::size).max().getAsInt());
+        System.out.println("    · Incident name: " + d8.stream().max(Comparator.comparing(List::size)).get().get(0).getDs_name());
         System.out.println();
         int total = d1.size() + d2.size() + d3.size() + d4.size() + d5.size() + d6.size() + d7.size() + d8.size();
         System.out.println("Total: " + total + " incidents");
@@ -853,4 +1301,117 @@ public class ExtractData {
 
     }
 
+    private static String writeXLSDetailFileWithMetadata(String path, ArrayList<List<List<IncidentDetailPhoneLoc_BikeType>>> incidentsDetail) throws IOException
+    {
+        Date date = new Date(System.currentTimeMillis());
+        String filename = path + "Output/IncidentsDetail/WithMetadata-" + String.valueOf(date.toInstant().toEpochMilli()) + ".xls";
+        
+        HSSFWorkbook wb = new HSSFWorkbook();
+        
+        int type=1;
+        for (List<List<IncidentDetailPhoneLoc_BikeType>> idtype : incidentsDetail)
+        {
+            HSSFSheet s = wb.createSheet("Type " + String.valueOf(type));
+
+            // Create heading
+            Row heading = s.createRow(0);
+            heading.createCell(0).setCellValue("DS_Name");
+            heading.createCell(1).setCellValue("Key");
+            heading.createCell(2).setCellValue("Type");
+            heading.createCell(3).setCellValue("PhoneLocation");
+            heading.createCell(4).setCellValue("BikeType");
+            heading.createCell(5).setCellValue("Latitude");
+            heading.createCell(6).setCellValue("Longitude");
+            heading.createCell(7).setCellValue("Acc_X");
+            heading.createCell(8).setCellValue("Acc_Y");
+            heading.createCell(9).setCellValue("Acc_z");
+            heading.createCell(10).setCellValue("Timestamp");
+            heading.createCell(11).setCellValue("Acc_68");
+            heading.createCell(12).setCellValue("Gyr_a");
+            heading.createCell(13).setCellValue("Gyr_b");
+            heading.createCell(14).setCellValue("Gyr_c");
+
+            CellStyle styleTimestamp = wb.createCellStyle();
+            HSSFDataFormat tf = wb.createDataFormat();
+            styleTimestamp.setDataFormat(tf.getFormat("#####"));
+
+            // Adding Data
+            int r = 1, id = 1;
+            for (List<IncidentDetailPhoneLoc_BikeType> lid : idtype) 
+            {
+                for (IncidentDetailPhoneLoc_BikeType i : lid)
+                {
+                    Row row = s.createRow(r);
+                    // Ds_Name
+                    Cell cellDs_name = row.createCell(0);
+                    cellDs_name.setCellValue(i.getDs_name());
+                    // Key
+                    Cell cellKey = row.createCell(1);
+                    cellKey.setCellValue(id);
+                    // Type
+                    Cell cellType = row.createCell(2);
+                    cellType.setCellValue(i.getType());
+                    // PhoneLocation
+                    Cell cellpLoc = row.createCell(3);
+                    cellpLoc.setCellValue(i.getpLoc());
+                    // BikeType
+                    Cell cellBikeType = row.createCell(4);
+                    cellBikeType.setCellValue(i.getBikeType());                                        
+                    // Latitude
+                    Cell cellLatitude = row.createCell(5);
+                    cellLatitude.setCellValue(i.getLatitude());
+                    // Longitude
+                    Cell cellLongitude = row.createCell(6);
+                    cellLongitude.setCellValue(i.getLongitude());
+                    // Acc_x
+                    Cell cellAcc_x = row.createCell(7);
+                    cellAcc_x.setCellValue(i.getAcc_x());
+                    // Acc_y
+                    Cell cellAcc_y = row.createCell(8);
+                    cellAcc_y.setCellValue(i.getAcc_y());
+                    // Acc_z
+                    Cell cellAcc_z = row.createCell(9);
+                    cellAcc_z.setCellValue(i.getAcc_z());
+                    // Timestamp
+                    Cell cellTimestamp = row.createCell(10);
+                    cellTimestamp.setCellValue(i.getTimestamp());
+                    cellTimestamp.setCellStyle(styleTimestamp); //Style
+                    // Acc_68
+                    Cell cellAcc_68 = row.createCell(11);
+                    cellAcc_68.setCellValue(i.getAcc_68());
+                    // Gyr_A
+                    Cell cellgyr_A = row.createCell(12);
+                    cellgyr_A.setCellValue(i.getGyr_a());
+                    // Gyr_B
+                    Cell cellgyr_B = row.createCell(13);
+                    cellgyr_B.setCellValue(i.getGyr_b());
+                    // Gyr_C
+                    Cell cellgyr_C = row.createCell(14);
+                    cellgyr_C.setCellValue(i.getGyr_c());
+                    r++;
+                }
+                id++;
+            }
+            
+            //Filter
+            s.setAutoFilter(new CellRangeAddress(0, 0, 0, 12));
+            s.createFreezePane(0, 1);
+            
+            //Autofit
+            for(int k=0; k<=12; k++)
+                s.autoSizeColumn(k);
+            
+            type++;
+        }
+        
+        
+        // Save file
+        FileOutputStream out = new FileOutputStream(filename);
+        wb.write(out);
+        out.close();
+        wb.close();
+        
+        return filename;
+
+    }    
 }

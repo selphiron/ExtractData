@@ -11,12 +11,14 @@ import java.util.Date;
  *
  * @author AlbertSanchez
  */
-public class IncidentCoordinates {
+public class IncidentCoordinatesAndMeta {
     
     private String ds_name;
     private double latitude;
     private double longitude;
     private int incident;
+    private int pLoc;
+    private int bikeType;
 
     public String getDs_name() {
         return ds_name;
@@ -32,6 +34,14 @@ public class IncidentCoordinates {
 
     public int getIncident() {
         return incident;
+    }
+
+    public int getpLoc() {
+        return pLoc;
+    }
+
+    public int getBikeType() {
+        return bikeType;
     }
 
     public void setDs_name(String ds_name) {
@@ -50,4 +60,11 @@ public class IncidentCoordinates {
         this.incident = incident;
     }    
 
+    public void setpLoc(int pLoc) {
+        this.pLoc = pLoc;
+    }
+
+    public void setBikeType(int bikeType) {
+        this.bikeType = bikeType;
+    }
 }
