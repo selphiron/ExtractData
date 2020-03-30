@@ -34,7 +34,8 @@ public class Incident {
     private boolean i9;
     private boolean scary;
     private String desc;
-
+    private boolean i10;
+    
     public String getDs_name() {
         return ds_name;
     }
@@ -118,7 +119,11 @@ public class Incident {
     public String getDesc() {
         return desc;
     }
-
+    
+    public boolean isI10() {
+        return i10;
+    }
+    
     public void setDs_name(String ds_name) {
         this.ds_name = ds_name;
     }
@@ -203,5 +208,7 @@ public class Incident {
         this.desc = desc;
     }
     
-    
+    public void setI10(boolean i10) {
+        this.i10 = i10;
+    }
 }
